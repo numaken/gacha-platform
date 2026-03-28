@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { pickRandomDemoPrize } from '@/lib/demo-data'
 
 const rankColors: Record<string, string> = {
   S: 'from-yellow-400 to-amber-500',
@@ -31,7 +32,7 @@ interface PrizeResult {
 
 type PlayState = 'idle' | 'confirming' | 'playing' | 'result'
 
-export function GachaPlay({ gachaId, price }: { gachaId: string; price: number }) {
+export function GachaPlay({ gachaId, price, isDemo = false }: { gachaId: string; price: number; isDemo?: boolean }) {
   const [state, setState] = useState<PlayState>('idle')
   const [results, setResults] = useState<PrizeResult[]>([])
   const [error, setError] = useState('')
@@ -42,6 +43,38 @@ export function GachaPlay({ gachaId, price }: { gachaId: string; price: number }
     setError('')
 
     try {
+      if (isDemo) {
+        // Demo mode: pick random prizes locally
+        await new Promise(resolve => setTimeout(resolve, 2000))
+
+        const prizes: PrizeResult[] = []
+        for (let i = 0; i < playCount; i++) {
+          const prize = pickRandomDemoPrize(gachaId)
+          if (prize) {
+            prizes.push({
+              id: prize.id,
+              name: prize.name,
+              rank: prize.rank,
+              description: prize.description,
+              image_url: prize.image_url,
+              probability: prize.probability,
+              is_last_one: prize.is_last_one,
+              exchange_points: prize.exchange_points,
+            })
+          }
+        }
+
+        if (prizes.length === 0) {
+          setError('景品がありません / No prizes available')
+          setState('idle')
+          return
+        }
+
+        setResults(prizes)
+        setState('result')
+        return
+      }
+
       const res = await fetch('/api/gacha/play', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -85,6 +118,12 @@ export function GachaPlay({ gachaId, price }: { gachaId: string; price: number }
           <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>
         )}
 
+        {isDemo && state === 'idle' && (
+          <div className="mb-4 rounded-lg bg-amber-50 p-3 text-center text-xs font-medium text-amber-600">
+            デモモード: 実際の決済は発生しません
+          </div>
+        )}
+
         {state === 'idle' && (
           <div className="space-y-3">
             <button
@@ -112,6 +151,9 @@ export function GachaPlay({ gachaId, price }: { gachaId: string; price: number }
               <span className="text-2xl font-extrabold text-blue-600">{(price * playCount).toLocaleString()} PT</span>
               <br />を消費して{playCount === 10 ? '10連' : ''}ガチャを回しますか？
             </p>
+            {isDemo && (
+              <p className="mt-2 text-center text-xs text-amber-600">デモモード: 実際の消費はありません</p>
+            )}
             <div className="mt-6 flex gap-3">
               <button
                 onClick={() => setState('idle')}

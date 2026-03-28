@@ -1,13 +1,22 @@
 import { createClient } from '@/lib/supabase/server'
 import { GachaCard } from '@/components/gacha/gacha-card'
+import { isDemo } from '@/lib/is-demo'
+import { demoGachas } from '@/lib/demo-data'
 
 export default async function Home() {
-  const supabase = await createClient()
-  const { data: gachas } = await supabase
-    .from('gachas')
-    .select('*')
-    .eq('is_active', true)
-    .order('sort_order', { ascending: true })
+  let gachas
+
+  if (isDemo()) {
+    gachas = demoGachas
+  } else {
+    const supabase = await createClient()
+    const { data } = await supabase
+      .from('gachas')
+      .select('*')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true })
+    gachas = data
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-12">
@@ -18,6 +27,11 @@ export default async function Home() {
         <p className="mt-3 text-lg text-zinc-500">
           ポイントを購入して、商品パックを選ぼう
         </p>
+        {isDemo() && (
+          <span className="mt-4 inline-block rounded-full bg-amber-100 px-4 py-1.5 text-sm font-bold text-amber-700">
+            DEMO MODE
+          </span>
+        )}
       </section>
 
       {gachas && gachas.length > 0 ? (

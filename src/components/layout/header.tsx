@@ -3,15 +3,24 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { isDemo } from '@/lib/is-demo'
+import { demoProfile } from '@/lib/demo-data'
 import type { Profile } from '@/types/database'
 
 export function Header() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+  const demo = isDemo()
 
   useEffect(() => {
+    if (demo) {
+      setProfile(demoProfile)
+      setLoading(false)
+      return
+    }
+
     async function getProfile() {
+      const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         const { data } = await supabase
@@ -24,9 +33,11 @@ export function Header() {
       setLoading(false)
     }
     getProfile()
-  }, [])
+  }, [demo])
 
   const handleLogout = async () => {
+    if (demo) return
+    const supabase = createClient()
     await supabase.auth.signOut()
     window.location.href = '/'
   }
@@ -34,9 +45,16 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-        <Link href="/" className="text-xl font-bold text-zinc-900">
-          GACHA<span className="text-blue-600">PLATFORM</span>
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href="/" className="text-xl font-bold text-zinc-900">
+            GACHA<span className="text-blue-600">PLATFORM</span>
+          </Link>
+          {demo && (
+            <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-700">
+              DEMO
+            </span>
+          )}
+        </div>
 
         <nav className="flex items-center gap-4">
           {loading ? (
@@ -64,12 +82,14 @@ export function Header() {
                   管理
                 </Link>
               )}
-              <button
-                onClick={handleLogout}
-                className="text-sm text-zinc-400 hover:text-zinc-600"
-              >
-                ログアウト
-              </button>
+              {!demo && (
+                <button
+                  onClick={handleLogout}
+                  className="text-sm text-zinc-400 hover:text-zinc-600"
+                >
+                  ログアウト
+                </button>
+              )}
             </>
           ) : (
             <>

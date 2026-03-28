@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { GachaPlay } from './gacha-play'
+import { isDemo } from '@/lib/is-demo'
+import { demoGachas, demoPrizes } from '@/lib/demo-data'
 
 const rankColors: Record<string, string> = {
   S: 'from-yellow-400 to-amber-500',
@@ -30,18 +32,31 @@ function formatDateTime(dateStr: string): string {
 
 export default async function GachaDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const supabase = await createClient()
+  const demo = isDemo()
 
-  const { data: gacha } = await supabase
-    .from('gachas')
-    .select('*, prizes(*)')
-    .eq('id', id)
-    .eq('is_active', true)
-    .single()
+  let gacha
+  let prizes
+
+  if (demo) {
+    gacha = demoGachas.find(g => g.id === id) || null
+    prizes = demoPrizes[id] || []
+  } else {
+    const supabase = await createClient()
+    const { data } = await supabase
+      .from('gachas')
+      .select('*, prizes(*)')
+      .eq('id', id)
+      .eq('is_active', true)
+      .single()
+    gacha = data
+    prizes = gacha?.prizes?.sort((a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order) || []
+  }
 
   if (!gacha) notFound()
 
-  const prizes = gacha.prizes?.sort((a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order) || []
+  if (demo) {
+    prizes = prizes.sort((a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order)
+  }
 
   const now = new Date()
   const isUpcoming = gacha.sale_start_at && new Date(gacha.sale_start_at) > now
@@ -121,7 +136,7 @@ export default async function GachaDetailPage({ params }: { params: Promise<{ id
             </p>
           )}
 
-          {isPlayable && <GachaPlay gachaId={gacha.id} price={gacha.price} />}
+          {isPlayable && <GachaPlay gachaId={gacha.id} price={gacha.price} isDemo={demo} />}
         </div>
       </div>
 

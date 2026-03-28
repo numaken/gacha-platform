@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ExchangeButton } from './exchange-button'
+import { isDemo } from '@/lib/is-demo'
+import { demoProfile, demoGachaResults, demoTransactions } from '@/lib/demo-data'
 
 const rankLabels: Record<string, string> = {
   S: 'S賞', A: 'A賞', B: 'B賞', C: 'C賞', last_one: 'ラストワン',
@@ -16,29 +18,44 @@ const rankColors: Record<string, string> = {
 }
 
 export default async function MyPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const demo = isDemo()
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single()
+  let profile
+  let results
+  let transactions
 
-  const { data: results } = await supabase
-    .from('gacha_results')
-    .select('*, prize:prizes(*), gacha:gachas(name)')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
-    .limit(50)
+  if (demo) {
+    profile = demoProfile
+    results = demoGachaResults
+    transactions = demoTransactions
+  } else {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) redirect('/login')
 
-  const { data: transactions } = await supabase
-    .from('point_transactions')
-    .select('*')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false })
-    .limit(20)
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single()
+    profile = profileData
+
+    const { data: resultsData } = await supabase
+      .from('gacha_results')
+      .select('*, prize:prizes(*), gacha:gachas(name)')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(50)
+    results = resultsData
+
+    const { data: txData } = await supabase
+      .from('point_transactions')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(20)
+    transactions = txData
+  }
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-12">
@@ -51,6 +68,12 @@ export default async function MyPage() {
           プロフィール編集
         </Link>
       </div>
+
+      {demo && (
+        <div className="mt-4 rounded-lg bg-amber-50 p-3 text-center text-sm font-medium text-amber-600">
+          デモモードです。表示はサンプルデータです。
+        </div>
+      )}
 
       {/* Point balance */}
       <div className="mt-6 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white">
@@ -105,7 +128,7 @@ export default async function MyPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  {result.status === 'won' && result.prize?.exchange_points && result.prize.exchange_points > 0 && (
+                  {!demo && result.status === 'won' && result.prize?.exchange_points && result.prize.exchange_points > 0 && (
                     <ExchangeButton
                       gachaResultId={result.id}
                       exchangePoints={result.prize.exchange_points}

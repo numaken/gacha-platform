@@ -1,53 +1,69 @@
 import { createClient } from '@/lib/supabase/server'
+import { isDemo } from '@/lib/is-demo'
 
 export default async function AdminDashboard() {
-  const supabase = await createClient()
+  const demo = isDemo()
 
-  // User count
-  const { count: userCount } = await supabase
-    .from('profiles')
-    .select('*', { count: 'exact', head: true })
+  let stats
 
-  // Total revenue (paid orders)
-  const { data: orders } = await supabase
-    .from('orders')
-    .select('amount')
-    .eq('status', 'paid')
+  if (demo) {
+    stats = [
+      { label: 'ユーザー数', value: '128', color: 'text-blue-600' },
+      { label: '総売上', value: '\u00a51,234,000', color: 'text-green-600' },
+      { label: '本日のガチャ回数', value: '47', color: 'text-amber-600' },
+      { label: '公開中ガチャ', value: '3', color: 'text-purple-600' },
+      { label: '未発送依頼', value: '12', color: 'text-rose-600' },
+    ]
+  } else {
+    const supabase = await createClient()
 
-  const totalRevenue = orders?.reduce((sum: number, o: { amount: number }) => sum + o.amount, 0) || 0
+    const { count: userCount } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
 
-  // Today's gacha plays
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+    const { data: orders } = await supabase
+      .from('orders')
+      .select('amount')
+      .eq('status', 'paid')
 
-  const { count: todayPlays } = await supabase
-    .from('gacha_results')
-    .select('*', { count: 'exact', head: true })
-    .gte('created_at', today.toISOString())
+    const totalRevenue = orders?.reduce((sum: number, o: { amount: number }) => sum + o.amount, 0) || 0
 
-  // Active gachas
-  const { count: activeGachas } = await supabase
-    .from('gachas')
-    .select('*', { count: 'exact', head: true })
-    .eq('is_active', true)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
 
-  // Pending shipping
-  const { count: pendingShipping } = await supabase
-    .from('shipping_requests')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'pending')
+    const { count: todayPlays } = await supabase
+      .from('gacha_results')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', today.toISOString())
 
-  const stats = [
-    { label: 'ユーザー数', value: (userCount || 0).toLocaleString(), color: 'text-blue-600' },
-    { label: '総売上', value: `¥${totalRevenue.toLocaleString()}`, color: 'text-green-600' },
-    { label: '本日のガチャ回数', value: (todayPlays || 0).toLocaleString(), color: 'text-amber-600' },
-    { label: '公開中ガチャ', value: (activeGachas || 0).toLocaleString(), color: 'text-purple-600' },
-    { label: '未発送依頼', value: (pendingShipping || 0).toLocaleString(), color: 'text-rose-600' },
-  ]
+    const { count: activeGachas } = await supabase
+      .from('gachas')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_active', true)
+
+    const { count: pendingShipping } = await supabase
+      .from('shipping_requests')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'pending')
+
+    stats = [
+      { label: 'ユーザー数', value: (userCount || 0).toLocaleString(), color: 'text-blue-600' },
+      { label: '総売上', value: `\u00a5${totalRevenue.toLocaleString()}`, color: 'text-green-600' },
+      { label: '本日のガチャ回数', value: (todayPlays || 0).toLocaleString(), color: 'text-amber-600' },
+      { label: '公開中ガチャ', value: (activeGachas || 0).toLocaleString(), color: 'text-purple-600' },
+      { label: '未発送依頼', value: (pendingShipping || 0).toLocaleString(), color: 'text-rose-600' },
+    ]
+  }
 
   return (
     <div>
       <h1 className="text-2xl font-bold text-zinc-900">ダッシュボード</h1>
+
+      {demo && (
+        <div className="mt-4 rounded-lg bg-amber-50 p-3 text-sm font-medium text-amber-600">
+          デモモード: サンプルデータを表示しています
+        </div>
+      )}
 
       <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {stats.map(stat => (
