@@ -101,6 +101,11 @@ export function GachaCard({ gacha }: { gacha: Gacha }) {
             />
           </div>
         )}
+
+        <div className="mt-3 flex items-center gap-1">
+          <span className="text-xs">💎</span>
+          <span className="text-xs font-medium text-emerald-600">価値保証</span>
+        </div>
       </div>
     </Link>
   )

@@ -34,6 +34,13 @@ export default async function Home() {
         )}
       </section>
 
+      <div className="mb-8 flex items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-6 py-4">
+        <span className="text-lg">💎</span>
+        <p className="text-sm font-medium text-emerald-700">
+          当サービスのすべての商品パックは、購入金額以上の市場価値を保証しています。
+        </p>
+      </div>
+
       {gachas && gachas.length > 0 ? (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {gachas.map((gacha) => (

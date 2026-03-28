@@ -142,6 +142,12 @@ export default async function GachaDetailPage({ params }: { params: Promise<{ id
 
       <section className="mt-12">
         <h2 className="text-xl font-bold text-zinc-900">景品一覧</h2>
+        <div className="mt-4 mb-4 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
+          <span className="text-lg">💎</span>
+          <p className="text-sm font-medium text-emerald-700">
+            すべてのパックに購入額以上の価値の商品が含まれています
+          </p>
+        </div>
         <div className="mt-4 grid gap-3">
           {prizes.map((prize: { id: string; rank: string; name: string; description: string | null; image_url: string | null; probability: number; stock: number }) => (
             <div
