@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { pickRandomDemoPrize } from '@/lib/demo-data'
-import { Countdown, CardReveal, MultiReveal } from '@/components/gacha/gacha-animation'
+import { Countdown, CardReveal, MultiReveal, SlotAnimation } from '@/components/gacha/gacha-animation'
 
 interface PrizeResult {
   id: string
@@ -15,7 +15,7 @@ interface PrizeResult {
   exchange_points: number | null
 }
 
-type PlayState = 'idle' | 'confirming' | 'countdown' | 'playing' | 'result'
+type PlayState = 'idle' | 'confirming' | 'countdown' | 'playing' | 'slot' | 'result'
 
 export function GachaPlay({ gachaId, price, isDemo = false, retryCost }: { gachaId: string; price: number; isDemo?: boolean; retryCost?: number | null }) {
   const [state, setState] = useState<PlayState>('idle')
@@ -57,7 +57,7 @@ export function GachaPlay({ gachaId, price, isDemo = false, retryCost }: { gacha
         }
 
         setResults(prizes)
-        setState('result')
+        setState('slot')
         return
       }
 
@@ -76,7 +76,7 @@ export function GachaPlay({ gachaId, price, isDemo = false, retryCost }: { gacha
       }
 
       setResults(data.prizes || [])
-      setState('result')
+      setState('slot')
     } catch {
       setError('通信エラーが発生しました / Network error')
       setState('idle')
@@ -211,18 +211,24 @@ export function GachaPlay({ gachaId, price, isDemo = false, retryCost }: { gacha
         <Countdown onComplete={handlePlay} />
       )}
 
-      {/* Playing animation */}
+      {/* Playing - API loading */}
       {state === 'playing' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95">
           <div className="text-center">
-            <div className="relative mx-auto h-32 w-32">
-              <div className="absolute inset-0 animate-spin rounded-full border-4 border-blue-300 border-t-blue-600" />
-              <div className="absolute inset-2 animate-spin rounded-full border-4 border-amber-300 border-b-amber-600" style={{ animationDirection: 'reverse', animationDuration: '0.8s' }} />
-              <div className="absolute inset-4 animate-pulse rounded-full bg-white/10" />
+            <div className="relative mx-auto h-20 w-20">
+              <div className="absolute inset-0 animate-spin rounded-full border-4 border-amber-300 border-t-amber-600" />
             </div>
-            <p className="mt-6 text-xl font-bold text-white animate-pulse">開封中...</p>
+            <p className="mt-4 text-lg font-bold text-white animate-pulse">抽選中...</p>
           </div>
         </div>
+      )}
+
+      {/* Slot reel animation */}
+      {state === 'slot' && results.length > 0 && (
+        <SlotAnimation
+          rank={results[0].rank}
+          onComplete={() => setState('result')}
+        />
       )}
 
       {/* Results */}
