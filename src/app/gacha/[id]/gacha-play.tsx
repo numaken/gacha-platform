@@ -17,11 +17,13 @@ interface PrizeResult {
 
 type PlayState = 'idle' | 'confirming' | 'countdown' | 'playing' | 'result'
 
-export function GachaPlay({ gachaId, price, isDemo = false }: { gachaId: string; price: number; isDemo?: boolean }) {
+export function GachaPlay({ gachaId, price, isDemo = false, retryCost }: { gachaId: string; price: number; isDemo?: boolean; retryCost?: number | null }) {
   const [state, setState] = useState<PlayState>('idle')
   const [results, setResults] = useState<PrizeResult[]>([])
   const [error, setError] = useState('')
   const [playCount, setPlayCount] = useState(1)
+  const [retryLoading, setRetryLoading] = useState(false)
+  const [lastResultId, setLastResultId] = useState<string | null>(null)
 
   const handlePlay = useCallback(async () => {
     setState('playing')
@@ -81,10 +83,57 @@ export function GachaPlay({ gachaId, price, isDemo = false }: { gachaId: string;
     }
   }, [isDemo, playCount, gachaId])
 
+  const handleRetry = useCallback(async () => {
+    if (isDemo) {
+      setRetryLoading(true)
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      const prize = pickRandomDemoPrize(gachaId)
+      if (prize) {
+        setResults([{
+          id: prize.id,
+          name: prize.name,
+          rank: prize.rank,
+          description: prize.description,
+          image_url: prize.image_url,
+          probability: prize.probability,
+          is_last_one: prize.is_last_one,
+          exchange_points: prize.exchange_points,
+        }])
+      }
+      setRetryLoading(false)
+      return
+    }
+
+    if (!lastResultId) return
+    setRetryLoading(true)
+
+    try {
+      const res = await fetch('/api/gacha/retry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gacha_result_id: lastResultId }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || 'リトライに失敗しました / Retry failed')
+        setRetryLoading(false)
+        return
+      }
+
+      setResults([data.prize])
+      setLastResultId(null)
+    } catch {
+      setError('通信エラーが発生しました / Network error')
+    }
+    setRetryLoading(false)
+  }, [isDemo, lastResultId, gachaId])
+
   const handleReset = () => {
     setState('idle')
     setResults([])
     setError('')
+    setLastResultId(null)
   }
 
   const openConfirm = (count: number) => {
@@ -184,6 +233,9 @@ export function GachaPlay({ gachaId, price, isDemo = false }: { gachaId: string;
           prizeImage={results[0].image_url}
           prizeDescription={results[0].description}
           onClose={handleReset}
+          retryCost={retryCost}
+          onRetry={retryCost ? handleRetry : undefined}
+          retryLoading={retryLoading}
         />
       )}
 

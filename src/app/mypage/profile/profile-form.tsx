@@ -26,7 +26,7 @@ const PREFECTURES = [
   '福岡県', '佐賀県', '長崎県', '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県',
 ]
 
-export function ProfileForm({ profile }: { profile: ProfileData }) {
+export function ProfileForm({ profile, isDemo = false }: { profile: ProfileData; isDemo?: boolean }) {
   const [form, setForm] = useState({
     display_name: profile.display_name || '',
     phone: profile.phone || '',
@@ -39,8 +39,45 @@ export function ProfileForm({ profile }: { profile: ProfileData }) {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [smsPhone, setSmsPhone] = useState('')
+  const [smsOtpCode, setSmsOtpCode] = useState('')
+  const [smsOtpSent, setSmsOtpSent] = useState(false)
+  const [smsVerified, setSmsVerified] = useState(!!profile.phone)
+  const [smsLoading, setSmsLoading] = useState(false)
   const supabase = createClient()
   const router = useRouter()
+
+  const handleSendSmsOtp = async () => {
+    if (!smsPhone || isDemo) return
+    setSmsLoading(true)
+    setError('')
+    const { error: otpError } = await supabase.auth.signInWithOtp({ phone: smsPhone })
+    if (otpError) {
+      setError('SMS送信に失敗しました / Failed to send SMS')
+    } else {
+      setSmsOtpSent(true)
+    }
+    setSmsLoading(false)
+  }
+
+  const handleVerifySmsOtp = async () => {
+    if (!smsOtpCode || !smsPhone || isDemo) return
+    setSmsLoading(true)
+    setError('')
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      phone: smsPhone,
+      token: smsOtpCode,
+      type: 'sms',
+    })
+    if (verifyError) {
+      setError('認証コードが正しくありません / Invalid verification code')
+    } else {
+      setSmsVerified(true)
+      setForm(prev => ({ ...prev, phone: smsPhone }))
+      setMessage('電話番号を認証しました')
+    }
+    setSmsLoading(false)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -166,9 +203,61 @@ export function ProfileForm({ profile }: { profile: ProfileData }) {
         />
       </div>
 
+      {/* SMS verification section */}
+      <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+        <p className="text-sm font-bold text-zinc-700">SMS認証</p>
+        {isDemo ? (
+          <p className="mt-2 text-sm text-zinc-500">SMS認証はデモモードでは利用できません</p>
+        ) : smsVerified ? (
+          <p className="mt-2 text-sm font-medium text-green-600">認証済み: {form.phone}</p>
+        ) : (
+          <>
+            <p className="mt-1 text-xs text-zinc-400">電話番号を認証するとアカウントのセキュリティが向上します</p>
+            <div className="mt-3 flex gap-2">
+              <input
+                type="tel"
+                value={smsPhone}
+                onChange={(e) => setSmsPhone(e.target.value)}
+                placeholder="+819012345678"
+                disabled={smsOtpSent}
+                className="flex-1 rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+              />
+              <button
+                type="button"
+                onClick={handleSendSmsOtp}
+                disabled={!smsPhone || smsOtpSent || smsLoading}
+                className="shrink-0 rounded-lg bg-zinc-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:opacity-50"
+              >
+                {smsLoading && !smsOtpSent ? '送信中...' : smsOtpSent ? '送信済み' : 'コード送信'}
+              </button>
+            </div>
+            {smsOtpSent && (
+              <div className="mt-3 flex gap-2">
+                <input
+                  type="text"
+                  value={smsOtpCode}
+                  onChange={(e) => setSmsOtpCode(e.target.value)}
+                  placeholder="6桁の認証コード"
+                  maxLength={6}
+                  className="flex-1 rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+                <button
+                  type="button"
+                  onClick={handleVerifySmsOtp}
+                  disabled={smsOtpCode.length !== 6 || smsLoading}
+                  className="shrink-0 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-green-700 disabled:opacity-50"
+                >
+                  {smsLoading ? '確認中...' : '認証する'}
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
       <button
         type="submit"
-        disabled={loading}
+        disabled={loading || isDemo}
         className="w-full rounded-xl bg-blue-600 py-3 text-sm font-bold text-white transition hover:bg-blue-700 disabled:opacity-50"
       >
         {loading ? '保存中...' : '保存する'}

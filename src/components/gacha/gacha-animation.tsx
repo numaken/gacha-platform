@@ -181,12 +181,18 @@ export function CardReveal({
   prizeImage,
   prizeDescription,
   onClose,
+  retryCost,
+  onRetry,
+  retryLoading,
 }: {
   rank: string
   prizeName: string
   prizeImage: string | null
   prizeDescription: string | null
   onClose: () => void
+  retryCost?: number | null
+  onRetry?: () => void
+  retryLoading?: boolean
 }) {
   const [phase, setPhase] = useState<'hidden' | 'flash' | 'reveal'>('hidden')
   const config = rankConfig[rank] || rankConfig.C
@@ -241,14 +247,25 @@ export function CardReveal({
                 {prizeDescription}
               </p>
             )}
-            <button
-              onClick={onClose}
-              className={`mt-6 w-full rounded-xl bg-zinc-900 py-3 text-sm font-bold text-white transition-all duration-500 delay-500 hover:bg-zinc-800 ${
-                phase === 'reveal' ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
-              }`}
-            >
-              閉じる
-            </button>
+            <div className={`mt-6 flex gap-3 transition-all duration-500 delay-500 ${
+              phase === 'reveal' ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'
+            }`}>
+              {retryCost != null && retryCost > 0 && onRetry && (
+                <button
+                  onClick={onRetry}
+                  disabled={retryLoading}
+                  className="flex-1 rounded-xl bg-amber-500 py-3 text-sm font-bold text-white transition hover:bg-amber-600 disabled:opacity-50"
+                >
+                  {retryLoading ? '再抽選中...' : `${retryCost.toLocaleString()} PT でリトライ`}
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                className={`${retryCost != null && retryCost > 0 && onRetry ? 'flex-1' : 'w-full'} rounded-xl bg-zinc-900 py-3 text-sm font-bold text-white transition hover:bg-zinc-800`}
+              >
+                閉じる
+              </button>
+            </div>
           </div>
         </div>
       </div>

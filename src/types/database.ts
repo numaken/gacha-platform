@@ -3,6 +3,7 @@ export type GachaType = 'normal' | 'daily' | 'infinite'
 export type PrizeRank = 'S' | 'A' | 'B' | 'C' | 'last_one'
 export type PointTransactionType = 'purchase' | 'gacha' | 'refund' | 'admin_adjust' | 'expire' | 'exchange'
 export type GachaResultStatus = 'won' | 'shipped' | 'delivered' | 'exchanged'
+export type RankName = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond'
 export type ShippingStatus = 'pending' | 'processing' | 'shipped' | 'delivered'
 export type OrderStatus = 'pending' | 'paid' | 'failed' | 'refunded'
 
@@ -17,9 +18,20 @@ export interface Profile {
   address: string | null
   building: string | null
   point_balance: number
+  total_spent: number
   role: UserRole
   created_at: string
   updated_at: string
+}
+
+export interface UserRank {
+  id: string
+  name: RankName
+  display_name: string
+  min_spent: number
+  point_bonus_rate: number
+  gacha_discount_rate: number
+  created_at: string
 }
 
 export interface PointPackage {
@@ -58,6 +70,7 @@ export interface Gacha {
   min_total_spent: number | null
   sale_start_at: string | null
   sale_end_at: string | null
+  retry_cost: number | null
   sort_order: number
   created_at: string
   updated_at: string
@@ -88,6 +101,7 @@ export interface GachaResult {
   prize_id: string
   points_spent: number
   status: GachaResultStatus
+  retried: boolean
   created_at: string
   prize?: Prize
   gacha?: Gacha

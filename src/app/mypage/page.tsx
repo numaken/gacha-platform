@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { ExchangeButton } from './exchange-button'
 import { isDemo } from '@/lib/is-demo'
 import { demoProfile, demoGachaResults, demoTransactions } from '@/lib/demo-data'
+import { getUserRank, getNextRank, getAmountToNextRank, RANK_COLORS } from '@/lib/ranks'
 
 const rankLabels: Record<string, string> = {
   S: 'S賞', A: 'A賞', B: 'B賞', C: 'C賞', last_one: 'ラストワン',
@@ -75,12 +76,39 @@ export default async function MyPage() {
         </div>
       )}
 
-      {/* Point balance */}
+      {/* Point balance + Rank */}
       <div className="mt-6 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white">
-        <p className="text-sm opacity-80">ポイント残高</p>
-        <p className="mt-1 text-4xl font-extrabold">
-          {(profile?.point_balance || 0).toLocaleString()} <span className="text-lg">PT</span>
-        </p>
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-sm opacity-80">ポイント残高</p>
+            <p className="mt-1 text-4xl font-extrabold">
+              {(profile?.point_balance || 0).toLocaleString()} <span className="text-lg">PT</span>
+            </p>
+          </div>
+          {(() => {
+            const rank = getUserRank(profile?.total_spent || 0)
+            const colors = RANK_COLORS[rank.name]
+            return (
+              <Link href="/mypage/rank" className={`rounded-full ${colors.badge} px-4 py-1.5 text-sm font-bold text-white transition hover:opacity-90`}>
+                {rank.display_name}
+              </Link>
+            )
+          })()}
+        </div>
+        {(() => {
+          const amountToNext = getAmountToNextRank(profile?.total_spent || 0)
+          const nextRank = getNextRank(profile?.total_spent || 0)
+          if (amountToNext !== null && nextRank) {
+            return (
+              <p className="mt-2 text-xs opacity-70">
+                次のランク「{nextRank.display_name}」まであと {amountToNext.toLocaleString()}円
+              </p>
+            )
+          }
+          return (
+            <p className="mt-2 text-xs opacity-70">最高ランクに到達しています</p>
+          )
+        })()}
         <Link
           href="/checkout"
           className="mt-4 inline-block rounded-full bg-white/20 px-6 py-2 text-sm font-bold backdrop-blur transition hover:bg-white/30"

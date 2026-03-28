@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { isDemo } from '@/lib/is-demo'
 import { demoProfile } from '@/lib/demo-data'
 import type { Profile } from '@/types/database'
+import { getUserRank, RANK_COLORS } from '@/lib/ranks'
 
 export function Header() {
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -71,6 +72,15 @@ export function Header() {
                 href="/mypage"
                 className="flex items-center gap-2 text-sm text-zinc-600 hover:text-zinc-900"
               >
+                {(() => {
+                  const rank = getUserRank(profile.total_spent)
+                  const colors = RANK_COLORS[rank.name]
+                  return (
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold text-white ${colors.badge}`}>
+                      {rank.display_name}
+                    </span>
+                  )
+                })()}
                 <span className="font-bold text-blue-600">{profile.point_balance.toLocaleString()} PT</span>
                 <span>{profile.display_name || 'マイページ'}</span>
               </Link>

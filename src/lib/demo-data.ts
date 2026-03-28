@@ -1,4 +1,4 @@
-import type { Gacha, Prize, PointPackage, PointTransaction, Profile } from '@/types/database'
+import type { Gacha, Prize, PointPackage, PointTransaction, Profile, UserRank } from '@/types/database'
 
 // --- Gacha definitions ---
 
@@ -25,6 +25,7 @@ export const demoGachas: Gacha[] = [
     min_total_spent: null,
     sale_start_at: null,
     sale_end_at: null,
+    retry_cost: 5000,
     sort_order: 1,
     created_at: '2026-03-01T00:00:00Z',
     updated_at: '2026-03-28T00:00:00Z',
@@ -45,6 +46,7 @@ export const demoGachas: Gacha[] = [
     min_total_spent: null,
     sale_start_at: null,
     sale_end_at: null,
+    retry_cost: 2500,
     sort_order: 2,
     created_at: '2026-03-01T00:00:00Z',
     updated_at: '2026-03-28T00:00:00Z',
@@ -65,6 +67,7 @@ export const demoGachas: Gacha[] = [
     min_total_spent: null,
     sale_start_at: null,
     sale_end_at: null,
+    retry_cost: null,
     sort_order: 3,
     created_at: '2026-03-01T00:00:00Z',
     updated_at: '2026-03-28T00:00:00Z',
@@ -360,14 +363,25 @@ export const demoProfile: Profile = {
   address: null,
   building: null,
   point_balance: 10000,
+  total_spent: 55000,
   role: 'admin',
   created_at: '2026-03-01T00:00:00Z',
   updated_at: '2026-03-28T00:00:00Z',
 }
 
+// --- Demo ranks ---
+
+export const demoRanks: UserRank[] = [
+  { id: 'demo-rank-1', name: 'bronze', display_name: 'ブロンズ', min_spent: 0, point_bonus_rate: 0, gacha_discount_rate: 0, created_at: '2026-03-01T00:00:00Z' },
+  { id: 'demo-rank-2', name: 'silver', display_name: 'シルバー', min_spent: 10000, point_bonus_rate: 3, gacha_discount_rate: 0, created_at: '2026-03-01T00:00:00Z' },
+  { id: 'demo-rank-3', name: 'gold', display_name: 'ゴールド', min_spent: 50000, point_bonus_rate: 5, gacha_discount_rate: 5, created_at: '2026-03-01T00:00:00Z' },
+  { id: 'demo-rank-4', name: 'platinum', display_name: 'プラチナ', min_spent: 200000, point_bonus_rate: 10, gacha_discount_rate: 10, created_at: '2026-03-01T00:00:00Z' },
+  { id: 'demo-rank-5', name: 'diamond', display_name: 'ダイヤモンド', min_spent: 500000, point_bonus_rate: 15, gacha_discount_rate: 15, created_at: '2026-03-01T00:00:00Z' },
+]
+
 // --- Demo gacha results (won prizes) ---
 
-export const demoGachaResults: { id: string; user_id: string; gacha_id: string; prize_id: string; points_spent: number; status: string; created_at: string; prize: Prize; gacha: { name: string } }[] = [
+export const demoGachaResults: { id: string; user_id: string; gacha_id: string; prize_id: string; points_spent: number; status: string; retried: boolean; created_at: string; prize: Prize; gacha: { name: string } }[] = [
   {
     id: 'demo-result-1',
     user_id: demoProfile.id,
@@ -375,6 +389,7 @@ export const demoGachaResults: { id: string; user_id: string; gacha_id: string; 
     prize_id: 'demo-prize-iphone-b',
     points_spent: 10000,
     status: 'won',
+    retried: false,
     created_at: '2026-03-27T14:30:00Z',
     prize: iphonePrizes[2],
     gacha: { name: 'iPhone 17 Pro ガチャ' },
@@ -386,6 +401,7 @@ export const demoGachaResults: { id: string; user_id: string; gacha_id: string; 
     prize_id: 'demo-prize-ps5-c',
     points_spent: 5000,
     status: 'shipped',
+    retried: false,
     created_at: '2026-03-26T10:15:00Z',
     prize: ps5Prizes[3],
     gacha: { name: 'PS5 スペシャルガチャ' },
@@ -397,6 +413,7 @@ export const demoGachaResults: { id: string; user_id: string; gacha_id: string; 
     prize_id: 'demo-prize-beginner-a',
     points_spent: 3000,
     status: 'won',
+    retried: false,
     created_at: '2026-03-25T18:00:00Z',
     prize: beginnerPrizes[1],
     gacha: { name: 'ビギナーズガチャ' },

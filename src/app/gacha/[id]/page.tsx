@@ -136,7 +136,7 @@ export default async function GachaDetailPage({ params }: { params: Promise<{ id
             </p>
           )}
 
-          {isPlayable && <GachaPlay gachaId={gacha.id} price={gacha.price} isDemo={demo} />}
+          {isPlayable && <GachaPlay gachaId={gacha.id} price={gacha.price} isDemo={demo} retryCost={gacha.retry_cost} />}
         </div>
       </div>
 

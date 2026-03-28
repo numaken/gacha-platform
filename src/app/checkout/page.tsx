@@ -48,7 +48,7 @@ export default async function CheckoutPage() {
         </div>
       )}
 
-      <CheckoutForm packages={packages} />
+      <CheckoutForm packages={packages} isDemo={demo} />
     </div>
   )
 }

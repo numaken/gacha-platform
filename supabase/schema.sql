@@ -250,6 +250,32 @@ ALTER TABLE public.point_transactions DROP CONSTRAINT IF EXISTS point_transactio
 ALTER TABLE public.point_transactions ADD CONSTRAINT point_transactions_type_check
   CHECK (type IN ('purchase', 'gacha', 'refund', 'admin_adjust', 'expire', 'exchange'));
 
+-- profiles: 累計課金額
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS total_spent int NOT NULL DEFAULT 0;
+
+-- user_ranks: VIPランクマスタ
+CREATE TABLE IF NOT EXISTS public.user_ranks (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  display_name text NOT NULL,
+  min_spent int NOT NULL DEFAULT 0,
+  point_bonus_rate int NOT NULL DEFAULT 0,
+  gacha_discount_rate int NOT NULL DEFAULT 0,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.user_ranks ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can view ranks" ON public.user_ranks FOR SELECT USING (true);
+CREATE POLICY "Admin can manage ranks" ON public.user_ranks FOR ALL USING (
+  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+);
+
+-- gachas: リトライコスト
+ALTER TABLE public.gachas ADD COLUMN IF NOT EXISTS retry_cost int;
+
+-- gacha_results: リトライ済みフラグ
+ALTER TABLE public.gacha_results ADD COLUMN IF NOT EXISTS retried boolean NOT NULL DEFAULT false;
+
 -- ポイントパッケージ初期データ
 insert into public.point_packages (name, points, price, sort_order) values
   ('500 PT', 500, 500, 1),
@@ -260,3 +286,11 @@ insert into public.point_packages (name, points, price, sort_order) values
   ('100,000 PT', 100000, 100000, 6),
   ('200,000 PT', 200000, 200000, 7),
   ('500,000 PT', 500000, 500000, 8);
+
+-- VIPランク初期データ
+INSERT INTO public.user_ranks (name, display_name, min_spent, point_bonus_rate, gacha_discount_rate) VALUES
+  ('bronze', 'ブロンズ', 0, 0, 0),
+  ('silver', 'シルバー', 10000, 3, 0),
+  ('gold', 'ゴールド', 50000, 5, 5),
+  ('platinum', 'プラチナ', 200000, 10, 10),
+  ('diamond', 'ダイヤモンド', 500000, 15, 15);
